@@ -1,1 +1,72 @@
 <?php
+
+/**
+ * Implements hook_menu().
+ */
+function cross_site_alert_menu() {
+    $items = array();
+
+    $items['admin/config/content/cross-site-alert'] = array(
+        'title' => 'Cross-Site Alert',
+        'description' => 'Cross-Site Alert administration.',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('cross_site_admin_settings'),
+        'access callback' => 'user_access',
+        'access arguments' => array('administer site configuration'),
+    );
+
+    $items['json/csa.json'] = array(
+        'page callback' => '_cross_site_content',
+        'access arguments' => array('access content',),
+        'delivery callback' => 'drupal_json_output',
+    );
+
+    return $items;
+}
+
+/**
+ * Administer CSA module
+ */
+function cross_site_admin_settings() {
+
+    $form = array();
+
+    $form['alert_origin'] = array(
+        '#title' => t('Will the alert content be controlled from this site?'),
+        '#type' => 'radios',
+        '#default_value' => variable_get('alert_origin', 0),
+        '#options' => array(0 => t("No, this is a client"), 1 => t('Yes, this is the origin')),
+        '#description' => t('Only one site should be configured as the origin. All others should be set as a client and will pull the content from the origin.'),
+
+    );
+
+    $form['alert_url'] = array(
+    '#title' => t('Please provide the alert URL:'),
+    '#type' => 'textfield',
+    '#states' => array(
+      'visible' => array(
+        ':input[name="alert_origin"]' => array('value' => 0),
+      ),
+    ),
+  );
+    return system_settings_form($form);
+}
+
+
+//
+function _cross_site_content() {
+
+    //If set to client, redirect to homepage
+    if ( variable_get('alert_origin', "0") === "0") {
+        drupal_goto('/');
+        return;
+    }
+    drupal_add_http_header('Access-Control-Allow-Origin', '*');
+    drupal_add_http_header('Access-Control-Allow-Methods', 'GET');
+
+
+
+    //Retrieve and output content as JSON
+
+
+}
