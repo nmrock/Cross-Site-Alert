@@ -1,4 +1,4 @@
-name = Cross Site Alert Module
+name = Cross Site Alert
 description = Allows admins to create an AJAX alert across multiple sites.
 core = 7.x
 dependencies[] = block
