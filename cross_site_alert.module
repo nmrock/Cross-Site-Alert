@@ -10,7 +10,7 @@ function cross_site_alert_menu() {
         'title' => 'Cross-Site Alert',
         'description' => 'Cross-Site Alert administration.',
         'page callback' => 'drupal_get_form',
-        'page arguments' => array('cross_site_admin_settings'),
+        'page arguments' => array('cross_site_alert_admin_settings'),
         'access callback' => 'user_access',
         'access arguments' => array('administer site configuration'),
     );
@@ -27,25 +27,48 @@ function cross_site_alert_menu() {
 /**
  * Administer CSA module
  */
-function cross_site_admin_settings() {
+function cross_site_alert_admin_settings($form, &$form_state) {
 
-    $form = array();
-
-    $form['alert_origin'] = array(
+    $form['cross_site_alert_origin'] = array(
         '#title' => t('Will the alert content be controlled from this site?'),
         '#type' => 'radios',
-        '#default_value' => variable_get('alert_origin', 0),
+        '#default_value' => variable_get('cross_site_alert_origin', 0),
         '#options' => array(0 => t("No, this is a client"), 1 => t('Yes, this is the origin')),
         '#description' => t('Only one site should be configured as the origin. All others should be set as a client and will pull the content from the origin.'),
 
     );
 
-    $form['alert_url'] = array(
+    $form['cross_site_alert_url'] = array(
     '#title' => t('Please provide the alert URL:'),
     '#type' => 'textfield',
+    '#default_value' => variable_get('cross_site_alert_url', ''),
     '#states' => array(
       'visible' => array(
-        ':input[name="alert_origin"]' => array('value' => 0),
+        ':input[name="cross_site_alert_origin"]' => array('value' => '0'),
+      ),
+    ),
+  );
+
+  $form['cross_site_alert_enabled'] = array(
+        '#title' => t('Enable the alert?'),
+        '#type' => 'radios',
+        '#default_value' => variable_get('cross_site_alert_enabled', 0),
+        '#options' => array(0 => t("Disable Alert"), 1 => t('Enable Alert')),
+        '#description' => t('When the alert is enabled, all Cross Site Alert blocks (including on this site) will display the content in the text box <below></below>.'),
+        '#states' => array(
+            'visible' => array(
+                ':input[name="cross_site_alert_origin"]' => array('value' => '1'),
+            ),
+        ),
+    );
+
+   $form['cross_site_alert_content'] = array(
+    '#title' => t('Please provide the alert content:'),
+    '#type' => 'textarea',
+    '#default_value' => variable_get('cross_site_alert_content', ''),
+    '#states' => array(
+      'visible' => array(
+        ':input[name="cross_site_alert_origin"]' => array('value' => '1'),
       ),
     ),
   );
@@ -57,16 +80,24 @@ function cross_site_admin_settings() {
 function _cross_site_content() {
 
     //If set to client, redirect to homepage
-    if ( variable_get('alert_origin', "0") === "0") {
+    if ( variable_get('cross_site_alert_origin', 0) == 0) {
         drupal_goto('/');
         return;
     }
+
+    // Allowing wildcard CORS for this page only, since it contains only the alert status
+    // and content (which is intended to be publicly disseminated).
+    // This page does not allow for any data changes.
     drupal_add_http_header('Access-Control-Allow-Origin', '*');
     drupal_add_http_header('Access-Control-Allow-Methods', 'GET');
 
 
 
     //Retrieve and output content as JSON
-
+    $alertInfo = new stdClass();
+    $alertInfo->enabled = variable_get('cross_site_alert_enabled', 0);
+    if ($alertInfo->enabled != 0)
+        $alertInfo->content = variable_get('cross_site_alert_content', 0);
+    return $alertInfo;
 
 }
