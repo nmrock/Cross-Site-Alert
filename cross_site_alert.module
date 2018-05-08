@@ -28,7 +28,6 @@ function cross_site_alert_menu() {
  * Administer CSA module
  */
 function cross_site_alert_admin_settings($form, &$form_state) {
-
     $form['cross_site_alert_origin'] = array(
         '#title' => t('Will the alert content be controlled from this site?'),
         '#type' => 'radios',
@@ -37,7 +36,6 @@ function cross_site_alert_admin_settings($form, &$form_state) {
         '#description' => t('Only one site should be configured as the origin. All others should be set as a client and will pull the content from the origin.'),
 
     );
-
     $form['cross_site_alert_url'] = array(
     '#title' => t('Please provide the alert URL:'),
     '#type' => 'textfield',
@@ -48,7 +46,6 @@ function cross_site_alert_admin_settings($form, &$form_state) {
       ),
     ),
   );
-
   $form['cross_site_alert_enabled'] = array(
         '#title' => t('Enable the alert?'),
         '#type' => 'radios',
@@ -61,7 +58,6 @@ function cross_site_alert_admin_settings($form, &$form_state) {
             ),
         ),
     );
-
    $form['cross_site_alert_content'] = array(
     '#title' => t('Please provide the alert content:'),
     '#type' => 'textarea',
@@ -72,7 +68,6 @@ function cross_site_alert_admin_settings($form, &$form_state) {
       ),
     ),
   );
-
   $form['cross_site_alert_JSON_endpoint'] = array(
    '#type' => 'item',
     '#title' => t('Alert URL'),
@@ -84,7 +79,7 @@ function cross_site_alert_admin_settings($form, &$form_state) {
       ),
     ),
   );
-    return system_settings_form($form);
+  return system_settings_form($form);
 }
 
 
@@ -105,7 +100,7 @@ function _cross_site_alert_content() {
 
 
 
-    //Retrieve and output content as JSON
+    //If alert is enabled, retrieve content and output as JSON
     $alertInfo = new stdClass();
     $alertInfo->enabled = variable_get('cross_site_alert_enabled', 0);
     if ($alertInfo->enabled != 0)
@@ -118,8 +113,6 @@ function _cross_site_alert_content() {
 
 /**
  * Implements hook_block_info().
- *
- * This hook declares what blocks are provided by the module.
  */
 function cross_site_alert_block_info() {
   $blocks['cross_site_alert_block'] = array(
@@ -134,50 +127,23 @@ function cross_site_alert_block_info() {
 
 /**
  * Implements hook_block_view().
- *
- * This hook generates the contents of the blocks themselves.
  */
 function cross_site_alert_block_view($delta = '') {
   // The $delta parameter tells us which block is being requested.
+  $block = array();
   switch ($delta) {
     case 'cross_site_alert_block':
       // If this is the origin, no need for an AJAX request -- just get content from DB.
       if ( variable_get('cross_site_alert_origin', 0) == 1) {
         $block['content'] = variable_get('cross_site_alert_content', '');
       } else {
-        drupal_add_js(drupal_get_path('module', 'cross_site_alert') . '/js/cross-site-alert.js');
-        $block['content'] = '<div id="cross-site-alert" data-url="' . variable_get('cross_site_alert_url', '') . '"></div>';
+        $crossSiteUrl = variable_get('cross_site_alert_url', null);
+        if ($crossSiteUrl) {
+          drupal_add_js(drupal_get_path('module', 'cross_site_alert') . '/js/cross-site-alert.js');
+          $block['content'] = '<div id="cross-site-alert" data-url="' . variable_get('cross_site_alert_url', '') . '"></div>';
+        }
       }
       break;
   }
   return $block;
-}
-
-/**
- * A module-defined block content function.
- */
-function block_example_contents($which_block) {
-  switch ($which_block) {
-    case 'example_configurable_text':
-      // Modules would typically perform some database queries to fetch the
-      // content for their blocks. Here, we'll just use the variable set in the
-      // block configuration or, if none has set, a default value.
-      // Block content can be returned in two formats: renderable arrays
-      // (as here) are preferred though a simple string will work as well.
-      // Block content created through the UI defaults to a string.
-      $result = array(
-        '#markup' => variable_get('block_example_string',
-          t('A default value. This block was created at %time',
-            array('%time' => date('c'))
-          )
-        ),
-      );
-      return $result;
-
-    case 'example_empty':
-      // It is possible that a block not have any content, since it is
-      // probably dynamically constructed. In this case, Drupal will not display
-      // the block at all. This block will not be displayed.
-      return;
-  }
 }
