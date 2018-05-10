@@ -1,6 +1,5 @@
 (function($) {
   function ajaxCall(csaDiv) {
-      console.log('performing AJAX call');
       var xhttp = new XMLHttpRequest();
       xhttp.onreadystatechange = function() {
       if (this.readyState == 4 && this.status == 200) {
@@ -41,8 +40,6 @@
                 }
                 var timeBetween = new Date() - lastDate;
                 var minutesBetween = Math.floor((timeBetween / (1000 * 60)));
-                console.log('it has been ' + minutesBetween + 'minutes.');
-
                 if (minutesBetween > 14) {
                     ajaxCall(csaDiv);
                 } else {
