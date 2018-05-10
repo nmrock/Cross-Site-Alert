@@ -5,7 +5,6 @@
  */
 function cross_site_alert_menu() {
     $items = array();
-
     $items['admin/config/content/cross-site-alert'] = array(
         'title' => 'Cross-Site Alert',
         'description' => 'Cross-Site Alert administration.',
@@ -14,13 +13,11 @@ function cross_site_alert_menu() {
         'access callback' => 'user_access',
         'access arguments' => array('administer site configuration'),
     );
-
     $items['json/csa.json'] = array(
         'page callback' => '_cross_site_alert_content',
         'access arguments' => array('access content',),
         'delivery callback' => 'drupal_json_output',
     );
-
     return $items;
 }
 
@@ -83,22 +80,16 @@ function cross_site_alert_admin_settings($form, &$form_state) {
 }
 
 
-//
 function _cross_site_alert_content() {
-
-    //If set to client, redirect to homepage
+    //If set to client, JSON endpoint is disabled. Redirect to homepage.
     if ( variable_get('cross_site_alert_origin', 0) == 0) {
         drupal_goto('/');
         return;
     }
-
     // Allowing wildcard CORS for this page only, since it contains only the alert status
-    // and content (which is intended to be publicly disseminated).
-    // This page does not allow for any data changes.
+    // and alert content (which is intended to be publicly disseminated).
     drupal_add_http_header('Access-Control-Allow-Origin', '*');
     drupal_add_http_header('Access-Control-Allow-Methods', 'GET');
-
-
 
     //If alert is enabled, retrieve content and output as JSON
     $alertInfo = new stdClass();
@@ -106,20 +97,14 @@ function _cross_site_alert_content() {
     if ($alertInfo->enabled != 0)
         $alertInfo->content = variable_get('cross_site_alert_content', '');
     return $alertInfo;
-
 }
-
-
 
 /**
  * Implements hook_block_info().
  */
 function cross_site_alert_block_info() {
   $blocks['cross_site_alert_block'] = array(
-    // info: The name of the block.
     'info' => t('Cross Site Alert'),
-    // Block caching options (per role, per user, etc.)
-    // DRUPAL_CACHE_PER_ROLE is the default.
     'cache' => DRUPAL_CACHE_PER_ROLE,
   );
   return $blocks;
@@ -129,21 +114,77 @@ function cross_site_alert_block_info() {
  * Implements hook_block_view().
  */
 function cross_site_alert_block_view($delta = '') {
-  // The $delta parameter tells us which block is being requested.
+  $basepath = drupal_get_path('module', 'cross_site_alert');
   $block = array();
+
   switch ($delta) {
     case 'cross_site_alert_block':
+      $build = array();
+      $attached = array();
+      $attached['css'] = array($basepath . '/css/cross-site-style.css');
+
       // If this is the origin, no need for an AJAX request -- just get content from DB.
       if ( variable_get('cross_site_alert_origin', 0) == 1) {
-        $block['content'] = variable_get('cross_site_alert_content', '');
+          $build['content'] = variable_get('cross_site_alert_content', '');
       } else {
+        // If this is a client, add JS for AJAX request, retrieve JSON endpoint URL.
         $crossSiteUrl = variable_get('cross_site_alert_url', null);
         if ($crossSiteUrl) {
-          drupal_add_js(drupal_get_path('module', 'cross_site_alert') . '/js/cross-site-alert.js');
-          $block['content'] = '<div id="cross-site-alert" data-url="' . variable_get('cross_site_alert_url', '') . '"></div>';
+          $attached['js'] = array($basepath . '/js/cross-site-alert.js');
+          $build['#url'] =  variable_get('cross_site_alert_url', '');
+        }
+        //If there is no source URL configured yet, display nothing
+        else {
+          return;
         }
       }
+       $block['content'] = array(
+         '#markup' => theme('cross_site_alert_block_content', $build),
+         '#attached' => $attached,
+         );
       break;
   }
   return $block;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function cross_site_alert_theme($existing, $type, $theme, $path) {
+  return array(
+    'cross_site_alert_block_content' => array(
+      'variables' => array(
+        'content' => '',
+        '#url' => NULL,
+      ),
+    ),
+  );
+}
+
+
+function theme_cross_site_alert_block_content($variables) {
+
+  $content = $variables['content'];
+  $url = $variables['#url'];
+  $attributes = array(
+    'id' => array('cross-site-alert'),
+    'style' => array("background-image: url('/" .
+          drupal_get_path('module', 'cross_site_alert') .
+          "/img/info.png');"
+    ),
+  );
+  if (isset($url)) {
+    $attributes['data-url'] = array($url);
+    $attributes['class'] = array('ajax');
+  }
+  $output =  array(
+    '#type' => 'container',
+    '#attributes' => $attributes,
+    'content' => array(
+      '#type' => 'markup',
+      '#markup' => $content,
+    )
+  );
+
+  return drupal_render($output);
 }
