@@ -1,0 +1,22 @@
+
+#cross-site-alert {
+    margin: 1.5rem;
+    padding: 1rem 1rem 1rem 4.5rem;
+    background-repeat: no-repeat;
+    box-shadow: 0px 0px 6px #ccc;
+    background-color: #fff;
+    font-size: 18px;
+    background-size: 2rem;
+    background-position: 1rem center;
+}
+#cross-site-alert.ajax {
+    opacity: 0;
+    transform: translate(0px,-25px);
+}
+
+#cross-site-alert.ajax.loaded {
+    opacity: 1;
+    transform: translate(0,0);
+    transition: transform 0.75s ease-in-out, opacity 0.2s cubic-bezier(0, 0.57, 0.18, 0.71);
+
+}
