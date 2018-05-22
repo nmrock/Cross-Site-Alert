@@ -122,16 +122,29 @@ function cross_site_alert_block_view($delta = '') {
       $build = array();
       $attached = array();
       $attached['css'] = array($basepath . '/css/cross-site-style.css');
+      $attached['js'] = array($basepath . '/js/cross-site-alert.js');
 
       // If this is the origin, no need for an AJAX request -- just get content from DB.
+      //Pass to front-end JS: alert content, status as host, and whether alert is enabled/disabled
       if ( variable_get('cross_site_alert_origin', 0) == 1) {
-          $build['content'] = variable_get('cross_site_alert_content', '');
-      } else {
-        // If this is a client, add JS for AJAX request, retrieve JSON endpoint URL.
+          drupal_add_js(array('cross_site_alert' => array(
+            'content' => variable_get('cross_site_alert_content', ""),
+            'host' => true,
+            'enabled' => variable_get('cross_site_alert_enabled', 0),
+              )
+            ),
+            array('type' => 'setting'));
+      }
+      else {
+        // If this is a client, retrieve JSON endpoint URL.
         $crossSiteUrl = variable_get('cross_site_alert_url', null);
         if ($crossSiteUrl) {
-          $attached['js'] = array($basepath . '/js/cross-site-alert.js');
-          $build['#url'] =  variable_get('cross_site_alert_url', '');
+          //Pass to front-end JS: status as client, JSON endpoint URL
+           drupal_add_js(array('cross_site_alert' => array(
+               'host' => false,
+               'url' => $crossSiteUrl,
+               )
+              ), array('type' => 'setting'));
         }
         //If there is no source URL configured yet, display nothing
         else {
@@ -155,7 +168,6 @@ function cross_site_alert_theme($existing, $type, $theme, $path) {
     'cross_site_alert_block_content' => array(
       'variables' => array(
         'content' => '',
-        '#url' => NULL,
       ),
     ),
   );
@@ -165,7 +177,6 @@ function cross_site_alert_theme($existing, $type, $theme, $path) {
 function theme_cross_site_alert_block_content($variables) {
 
   $content = $variables['content'];
-  $url = $variables['#url'];
   $attributes = array(
     'id' => array('cross-site-alert'),
     'style' => array("background-image: url('/" .
@@ -173,10 +184,6 @@ function theme_cross_site_alert_block_content($variables) {
           "/img/info.png');"
     ),
   );
-  if (isset($url)) {
-    $attributes['data-url'] = array($url);
-    $attributes['class'] = array('ajax');
-  }
   $output =  array(
     '#type' => 'container',
     '#attributes' => $attributes,
